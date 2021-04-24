@@ -42,6 +42,7 @@ class _BaseFuncProblem(IProblem):
 
     def evaluate(self, X):
         decoded_rep = self.decode(X)
+        #print(decoded_rep)
         #X_eval = np.array(list(zip(1./(1. + 10.*self.n_dim + np.sum(decoded_rep**2 - 10.*np.cos(2.*np.pi*decoded_rep), axis = 1)), list(range(X.shape[0])))), dtype = [('fitness', float),('index', int)])
         X_eval = self.a_eval(decoded_rep)
         return X_eval
@@ -60,15 +61,17 @@ class _BaseFuncProblem(IProblem):
         decoded_rep = np.zeros((X_encoded.shape[0], self.n_dim))
         for i in range(self.n_dim):
             decoded_rep[:,i] = (X_encoded[:, i*self.gene_length : (i + 1)*self.gene_length]@(2**np.arange(X_encoded[:, i*self.gene_length : (i + 1)*self.gene_length].shape[1], dtype = np.float64)[::-1][:, np.newaxis])).T
+        #print(decoded_rep)
         return self.bounds[0] + decoded_rep*(self.bounds[1] - self.bounds[0])/(2**self.gene_length - 1)
 
 class Rastrigin(_BaseFuncProblem):
     def __init__(self, n_dim = 2, n_prec = 4):
-        super().__init__(79.999, (-5.12, 5.12), n_dim=n_dim, n_prec=n_prec)
+        super().__init__(99.999, (-5.12, 5.12), n_dim=n_dim, n_prec=n_prec)
 
 
     def a_eval(self, X_decoded):
-        return np.array(list(zip(80. - (10.*self.n_dim + np.sum(X_decoded**2 - 10.*np.cos(2.*np.pi*X_decoded), axis = 1)), list(range(X_decoded.shape[0])))), dtype = [('fitness', float),('index', int)])
+        #print((10.*self.n_dim + np.sum(X_decoded**2 - 10.*np.cos(2.*np.pi*X_decoded), axis = 1)))
+        return np.array(list(zip(100. - (10.*self.n_dim + np.sum(X_decoded**2 - 10.*np.cos(2.*np.pi*X_decoded), axis = 1)), list(range(X_decoded.shape[0])))), dtype = [('fitness', float),('index', int)])
 
 class Beale(_BaseFuncProblem):
     def __init__(self, n_prec = 4):
@@ -82,16 +85,16 @@ class Beale(_BaseFuncProblem):
 
 class Himmelblau(_BaseFuncProblem):
     def __init__(self, n_prec = 4):
-        super().__init__(1999.999, (-5., 5.), n_dim=2, n_prec=n_prec)
+        super().__init__(2199.999, (-5., 5.), n_dim=2, n_prec=n_prec)
 
     def a_eval(self, X_decoded):
         first_term = (X_decoded[:, 0]**2 + X_decoded[:, 1] - 11.)**2
         second_term = (X_decoded[:, 0] + X_decoded[:, 1]**2 - 7.)**2
-        return np.array(list(zip(2000. - (first_term + second_term), list(range(X_decoded.shape[0])))), dtype = [('fitness', float),('index', int)])
+        return np.array(list(zip(2200. - (first_term + second_term), list(range(X_decoded.shape[0])))), dtype = [('fitness', float),('index', int)])
 
 class Eggholder(_BaseFuncProblem):
     def __init__(self, n_prec = 4):
-        super().__init__(1959., (-512., 512.), n_dim=2, n_prec=n_prec)
+        super().__init__(1957., (-512., 512.), n_dim=2, n_prec=n_prec)
 
 
     def a_eval(self, X_decoded):
