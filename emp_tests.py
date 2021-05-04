@@ -10,54 +10,54 @@ import os
 
 
 
-rast = Rastrigin(n_dim = 2)
-beale = Beale()
-himme = Himmelblau()
-egg = Eggholder()
+rast = Rastrigin(n_dim = 2, n_prec=8)
+beale = Beale(n_prec=8)
+himme = Himmelblau(n_prec=8)
+egg = Eggholder(n_prec=4)
 
 fns = {"Rastrigin" : rast, "Beale" : beale, "Himmelblau" : himme, "Eggholder" : egg}
 params = {
     "PS":
     {
-        "Rastrigin":{"n_individuals" : 250, "pc" : 0.95, "pm" : 0.5/(rast.gene_length*2), "max_iter":10000,"selection":"proportional"}, 
-        "Beale":{"n_individuals" : 250, "pc" : 0.95, "pm" : .25/(beale.gene_length*2), "max_iter":10000,"selection":"proportional"},
+        "Rastrigin":{"n_individuals" : 500, "pc" : 0.95, "pm" : 0.5/(rast.gene_length*2), "max_iter":10000,"selection":"proportional"}, 
+        "Beale":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(beale.gene_length*2), "max_iter":10000,"selection":"proportional"},
         "Himmelblau":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(himme.gene_length*2), "max_iter":10000,"selection":"proportional"}, 
-        "Eggholder":{"n_individuals" : 500, "pc" : 0.95, "pm" : .5/(egg.gene_length*2), "max_iter":10000,"selection":"proportional"}
+        "Eggholder":{"n_individuals" : 500, "pc" : 0.95, "pm" : 0.25/(egg.gene_length*2), "max_iter":10000,"selection":"proportional"}
     },
     "PS_E":
     {
-        "Rastrigin":{"n_individuals" : 100, "pc" : 0.9, "pm" : .1/(rast.gene_length*2), "max_iter":50000, "elitism":0.1,"selection":"proportional"}, 
-        "Beale":{"n_individuals" : 100, "pc" : 0.95, "pm" : .1/(beale.gene_length*2), "max_iter":50000, "elitism":0.1,"selection":"proportional"},
-        "Himmelblau":{"n_individuals" : 100, "pc" : 0.95, "pm" : .1/(himme.gene_length*2), "max_iter":50000, "elitism":0.1,"selection":"proportional"}, 
-        "Eggholder":{"n_individuals" : 500, "pc" : 0.95, "pm" : 3./(egg.gene_length*2), "max_iter":100000, "elitism":0.1,"selection":"proportional"}
+        "Rastrigin":{"n_individuals" : 500, "pc" : 0.9, "pm" : .5/(rast.gene_length*2), "max_iter":10000, "elitism":0.1,"selection":"proportional"}, 
+        "Beale":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(beale.gene_length*2), "max_iter":10000, "elitism":0.1,"selection":"proportional"},
+        "Himmelblau":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(himme.gene_length*2), "max_iter":10000, "elitism":0.1,"selection":"proportional"}, 
+        "Eggholder":{"n_individuals" : 500, "pc" : 0.95, "pm" : 1./(egg.gene_length*2), "max_iter":10000, "elitism":0.2,"selection":"proportional"}
     },
     "TS":
     {
-        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : 1./(rast.gene_length*2),"max_iter":50000,"selection":"tournament"}, 
-        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : .1/(beale.gene_length*2),"max_iter":50000,"selection":"tournament"},
-        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":50000,"selection":"tournament"}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1.2/(egg.gene_length*2),"max_iter":100000,"selection":"tournament"}
+        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : .5/(rast.gene_length*2),"max_iter":10000,"selection":"tournament"}, 
+        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : .25/(beale.gene_length*2),"max_iter":10000,"selection":"tournament"},
+        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 0.25/(himme.gene_length*2),"max_iter":10000,"selection":"tournament"}, 
+        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : .25/(egg.gene_length*2),"max_iter":10000,"selection":"tournament"}
     },
     "TS_E":
     {
-        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : 1./(rast.gene_length*2),"max_iter":50000,"selection":"tournament","elitism":0.1}, 
-        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":50000,"selection":"tournament","elitism":0.1},
-        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":50000,"selection":"tournament","elitism":0.1}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":100000,"selection":"tournament","elitism":0.1}
+        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : .5/(rast.gene_length*2),"max_iter":10000,"selection":"tournament","elitism":0.1}, 
+        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 25./(beale.gene_length*2),"max_iter":10000,"selection":"tournament","elitism":0.1},
+        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : .25/(himme.gene_length*2),"max_iter":10000,"selection":"tournament","elitism":0.1}, 
+        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":10000,"selection":"tournament","elitism":0.2}
     },
     "SUS":
     {
-        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : 0.1,"max_iter":50000,"selection":"sus"}, 
-        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":50000,"selection":"sus"},
-        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":50000,"selection":"sus"}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":100000,"selection":"sus"}
+        "Rastrigin":{"n_individuals" : 500,"pc" : 0.9,"pm" :.5/(rast.gene_length*2),"max_iter":10000,"selection":"sus"}, 
+        "Beale":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":10000,"selection":"sus"},
+        "Himmelblau":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":10000,"selection":"sus"}, 
+        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":10000,"selection":"sus"}
     },
     "SUS_E":
     {
-        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : 0.1,"max_iter":50000,"selection":"sus","elitism":0.1}, 
-        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":50000,"selection":"sus","elitism":0.1},
-        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":50000,"selection":"sus","elitism":0.1}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":100000,"selection":"sus","elitism":0.1}
+        "Rastrigin":{"n_individuals" : 500,"pc" : 0.9,"pm" : .5/(rast.gene_length*2),"max_iter":10000,"selection":"sus","elitism":0.1}, 
+        "Beale":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":10000,"selection":"sus","elitism":0.1},
+        "Himmelblau":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":10000,"selection":"sus","elitism":0.1}, 
+        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":10000,"selection":"sus","elitism":0.2}
     }
 }
 
