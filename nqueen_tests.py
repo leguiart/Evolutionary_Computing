@@ -1,6 +1,7 @@
 from hklearn_genetic.genetic_algorithm import GeneticAlgorithm
 from hklearn_genetic.problem import IntegerNQueen, RealNQueen, BinaryNQueen
 from scipy import signal
+from utils import average_list_of_lists
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,6 +45,8 @@ root = logging.getLogger()
 root.setLevel(os.environ.get("LOGLEVEL", "INFO"))
 root.addHandler(handler)
 
+
+colors = ['b', 'g', 'y', 'c', 'k', 'm']
 params = {"Integer coding":500, "Real coding":500, "Binary coding":1000}
 integer_means = []
 integer_best = []
@@ -176,24 +179,38 @@ for dim in n_groups:
             real_means += [gens_avg]
         else:
             binary_means += [gens_avg]
-        for i in range(len(ga_best_li_dict[key])):
-            if len(ga_best_li_dict[key][i]) < params[key]:
-                ga_best_li_dict[key][i] += list(np.zeros(params[key] - len(ga_best_li_dict[key][i])))
-        for i in range(len(ga_avg_li_dict[key])):
-            if len(ga_avg_li_dict[key][i]) < params[key]:
-                ga_avg_li_dict[key][i] += list(np.zeros(params[key] - len(ga_avg_li_dict[key][i])))
-        ga_best_avg = np.average(np.array(ga_best_li_dict[key]), axis=0)
-        ga_avg_avg = np.average(np.array(ga_avg_li_dict[key]), axis=0)
+        # for i in range(len(ga_best_li_dict[key])):
+        #     if len(ga_best_li_dict[key][i]) < params[key]:
+        #         ga_best_li_dict[key][i] += list(np.zeros(params[key] - len(ga_best_li_dict[key][i])))
+        # for i in range(len(ga_avg_li_dict[key])):
+        #     if len(ga_avg_li_dict[key][i]) < params[key]:
+        #         ga_avg_li_dict[key][i] += list(np.zeros(params[key] - len(ga_avg_li_dict[key][i])))
+        # ga_best_avg = np.average(np.array(ga_best_li_dict[key]), axis=0)
+        # ga_avg_avg = np.average(np.array(ga_avg_li_dict[key]), axis=0)
         fig, axs = plt.subplots(2, 1, constrained_layout=True)
-        axs[0].plot(np.arange(int(gens_avg)), ga_best_avg[0 : int(gens_avg)])
+        for i, data in enumerate(ga_best_li_dict[key]):
+            if len(data) <= int(gens_avg):
+                axs[0].plot(np.arange(len(data)), data, color = colors[i] ,label = f'Run: {i}')
+            else:
+                axs[0].plot(np.arange(int(gens_avg)), data[0 : int(gens_avg)], color = colors[i], label = f'Run: {i}')
+        for i, data in enumerate(ga_avg_li_dict[key]):
+            if len(data) <= int(gens_avg):
+                axs[1].plot(np.arange(len(data)), data, color = colors[i], label = f'Run: {i}')   
+            else:
+                axs[1].plot(np.arange(int(gens_avg)), data[0 : int(gens_avg)], color = colors[i], label = f'Run: {i}')
+        ga_best_avg = average_list_of_lists(ga_best_li_dict[key])
+        ga_avg_avg = average_list_of_lists(ga_avg_li_dict[key])
+        
+        axs[0].plot(np.arange(int(gens_avg)), ga_best_avg[0 : int(gens_avg)], color = 'r', label = 'Average')
         axs[0].set_title(f"{key} "f", N = "f"{dim}")
         axs[0].set_xlabel('Generations')
         axs[0].set_ylabel('Best fitness')
         fig.suptitle("N Queen Problem for 5 runs", fontsize=16) 
-        axs[1].plot(np.arange(int(gens_avg)), ga_avg_avg[0 : int(gens_avg)])
+        axs[1].plot(np.arange(int(gens_avg)), ga_avg_avg[0 : int(gens_avg)], color = 'r', label = 'Average')
         axs[1].set_title(f"{key} "f", N = "f"{dim}")
         axs[1].set_xlabel('Generations')
         axs[1].set_ylabel('Average fitness') 
+        plt.legend()
         plt.savefig(f"{key}"f"_{dim}", bbox_inches='tight')
         #plt.show()
 
@@ -218,7 +235,7 @@ ax.bar_label(rects3, padding=3)
 fig.tight_layout()
 
 plt.savefig("Best_Fitness", bbox_inches='tight')
-plt.show()
+#plt.show()
 
 fig, ax = plt.subplots()
 rects1 = ax.bar(x - width, integer_global_count, width, label='Integer')
@@ -238,4 +255,4 @@ ax.bar_label(rects3, padding=3)
 fig.tight_layout()
 
 plt.savefig("Global_Solutions", bbox_inches='tight')
-plt.show()
+#plt.show()

@@ -90,8 +90,6 @@ class _BaseBinaryProblem(BaseProblem):
 
     def evaluate(self, X):
         decoded_rep = self.decode(X)
-        #print(decoded_rep)
-        #X_eval = np.array(list(zip(1./(1. + 10.*self.n_dim + np.sum(decoded_rep**2 - 10.*np.cos(2.*np.pi*decoded_rep), axis = 1)), list(range(X.shape[0])))), dtype = [('fitness', float),('index', int)])
         X_eval = self.a_eval(decoded_rep)
         return X_eval
 
