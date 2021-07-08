@@ -10,21 +10,23 @@ import logging
 import logging.handlers
 import os
 import math
+import itertools as iter
 
-BINARY = True
+BINARY = False
 REAL = True
 RUNS = 5
 
-def start(fns, params, avg_times, avg_iters, codif):
-    handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "simple_ga_tests.log"))
-    formatter = logging.Formatter(logging.BASIC_FORMAT)
-    handler.setFormatter(formatter)
-    root = logging.getLogger()
-    root.setLevel(os.environ.get("LOGLEVEL", "INFO"))
-    root.addHandler(handler)
+handler = logging.handlers.WatchedFileHandler(os.environ.get("LOGFILE", "simple_ga_tests.log"))
+formatter = logging.Formatter(logging.BASIC_FORMAT)
+handler.setFormatter(formatter)
+root = logging.getLogger()
+root.setLevel(os.environ.get("LOGLEVEL", "INFO"))
+root.addHandler(handler)
 
-    print(matplotlib.get_backend())
-    colors = ['b', 'g', 'y', 'c', 'k']
+def plot_fixed_params(fns, params, avg_times, avg_iters, codif):
+
+
+    #print(matplotlib.get_backend())
     for param in params.keys():
         print(f"Selection method: "f"{param}")
         logging.info(f"Selection method: "f"{param}")
@@ -68,22 +70,6 @@ def start(fns, params, avg_times, avg_iters, codif):
 
                 ga_best_li += [[fns[p].rank - b for b in ga.best]]
                 ga_avg_li += [[fns[p].rank - a for a in ga.averages]]
-                # print(f"Solution(s) found: "f"{sol}")
-                # logging.info(f"Solution(s) found: "f"{sol}")
-                # fig, axs = plt.subplots(2, 1, constrained_layout=True)
-                # axs[0].plot(np.arange(gens), ga.best)
-                # axs[0].set_title(f'{p}, Run: 'f'{i}')
-                # axs[0].set_xlabel('Generations')
-                # axs[0].set_ylabel('Best fitness')
-                # fig.suptitle(param, fontsize=16) 
-                # axs[1].plot(np.arange(gens), ga.averages)
-                # axs[1].set_title(f'{p}, Run: 'f'{i}')
-                # axs[1].set_xlabel('Generations')
-                # axs[1].set_ylabel('Average fitness') 
-                # manager = plt.get_current_fig_manager()
-                # manager.window.showMaximized()   
-                #plt.savefig(f"{param}"f"_"f"{p}"f"_"f"{i}", bbox_inches='tight')
-                #plt.show()
             g_avg = np.average(gens_avg)
             t_avg = np.average(elapsed_avg)
             print(f"Solutions found after an average of "f"{g_avg} iterations")
@@ -135,6 +121,35 @@ def start(fns, params, avg_times, avg_iters, codif):
     plot_grouped_bar_graph('Average time', 'Average time per selection method and function', labels, groups, data_times, f"Average_times_{codif}", 0.1, 1)
     plot_grouped_bar_graph("'Average generations'", 'Average generations per selection method and function', labels, groups, data_gens, f"Average_generations_{codif}", 0.1, 1)
 
+def get_best_parameters(fns, parameters_set, runs):
+    for selection_method in parameters_set.keys():
+        for function_to_optimize in fns.keys():
+            print(f"Starting parameter sweep for optimizing {function_to_optimize}, with selection method: {selection_method}")
+            logging.info(f"Starting parameter sweep for optimizing {function_to_optimize}, with selection method: {selection_method}")
+            params = get_best_parameter(fns[function_to_optimize], list(parameters_set[selection_method][function_to_optimize].values()), runs)
+            for i, param in enumerate(list(parameters_set[selection_method][function_to_optimize].keys())):
+                parameters_set[selection_method][function_to_optimize][param] = params[i]
+            print(f"Parameters chosen: {parameters_set[selection_method][function_to_optimize]}")
+            logging.info(f"Parameters chosen: {parameters_set[selection_method][function_to_optimize]}")
+
+
+def get_best_parameter(function, params_to_sweep, runs):
+    parameters = list(iter.product(*params_to_sweep))
+    params_idxs = []
+    for j, param in enumerate(parameters):
+        iter_avg = 0
+        for i in range(runs):
+            ga = GeneticAlgorithm(*param[1 : len(param)])
+            _, its = ga.evolve(function, param[0])
+            iter_avg += its
+        iter_avg = int(iter_avg/runs)
+        logging.info(f"The following parameters: {param}\nHad a performace of: {iter_avg}")
+
+        params_idxs += [(j, iter_avg)]
+    params_idxs.sort(key = lambda t : t[1])
+    return parameters[params_idxs[0][0]]
+
+        
 
 if BINARY:
     rast = BinaryRastrigin(n_dim = 2, n_prec=8)
@@ -145,45 +160,45 @@ if BINARY:
     params = {
     "PS_BINARY":
     {
-        "Rastrigin":{"n_individuals" : 500, "pc" : 0.95, "pm" : 0.5/(rast.gene_length*2), "max_iter":1000,"selection":"proportional"}, 
-        "Beale":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(beale.gene_length*2), "max_iter":1000,"selection":"proportional"},
-        "Himmelblau":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(himme.gene_length*2), "max_iter":1000,"selection":"proportional"}, 
-        "Eggholder":{"n_individuals" : 500, "pc" : 0.95, "pm" : 0.25/(egg.gene_length*2), "max_iter":1000,"selection":"proportional"}
+    "Rastrigin":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(rast.gene_length*2),  0.75/(rast.gene_length*2),  1./(rast.gene_length*2)], "max_iter":[1000],"selection":["proportional"]}, 
+    "Beale":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(beale.gene_length*2),  0.75/(beale.gene_length*2),  1./(beale.gene_length*2)], "max_iter":[1000],"selection":["proportional"]},
+    "Himmelblau":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(himme.gene_length*2),  0.75/(himme.gene_length*2),  1./(himme.gene_length*2)], "max_iter":[1000],"selection":["proportional"]}, 
+    "Eggholder":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(egg.gene_length*2),  0.75/(egg.gene_length*2),  1./(egg.gene_length*2)], "max_iter":[1000],"selection":["proportional"]}
     },
     "PS_E_BINARY":
     {
-        "Rastrigin":{"n_individuals" : 500, "pc" : 0.9, "pm" : .5/(rast.gene_length*2), "max_iter":1000, "elitism":0.1,"selection":"proportional"}, 
-        "Beale":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(beale.gene_length*2), "max_iter":1000, "elitism":0.1,"selection":"proportional"},
-        "Himmelblau":{"n_individuals" : 500, "pc" : 0.95, "pm" : .25/(himme.gene_length*2), "max_iter":1000, "elitism":0.1,"selection":"proportional"}, 
-        "Eggholder":{"n_individuals" : 500, "pc" : 0.95, "pm" : 1./(egg.gene_length*2), "max_iter":1000, "elitism":0.2,"selection":"proportional"}
+    "Rastrigin":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(rast.gene_length*2),  0.75/(rast.gene_length*2),  1./(rast.gene_length*2)], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]}, 
+    "Beale":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(beale.gene_length*2),  0.75/(beale.gene_length*2),  1./(beale.gene_length*2)], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]},
+    "Himmelblau":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(himme.gene_length*2),  0.75/(himme.gene_length*2),  1./(himme.gene_length*2)], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]}, 
+    "Eggholder":{"n_individuals" : [500], "pc" :[0.85, 0.9, 0.95], "pm" : [ 0.25/(egg.gene_length*2),  0.75/(egg.gene_length*2),  1./(egg.gene_length*2)], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]}
     },
     "TS_BINARY":
     {
-        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : .5/(rast.gene_length*2),"max_iter":1000,"selection":"tournament"}, 
-        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : .25/(beale.gene_length*2),"max_iter":1000,"selection":"tournament"},
-        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 0.25/(himme.gene_length*2),"max_iter":1000,"selection":"tournament"}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : .25/(egg.gene_length*2),"max_iter":1000,"selection":"tournament"}
+    "Rastrigin":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(rast.gene_length*2),  0.75/(rast.gene_length*2),  1./(rast.gene_length*2)],"max_iter":[1000],"selection":["tournament"]}, 
+    "Beale":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(beale.gene_length*2),  0.75/(beale.gene_length*2),  1./(beale.gene_length*2)],"max_iter":[1000],"selection":["tournament"]},
+    "Himmelblau":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(himme.gene_length*2),  0.75/(himme.gene_length*2),  1./(himme.gene_length*2)],"max_iter":[1000],"selection":["tournament"]}, 
+    "Eggholder":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(egg.gene_length*2),  0.75/(egg.gene_length*2),  1./(egg.gene_length*2)],"max_iter":[1000],"selection":["tournament"]}
     },
     "TS_E_BINARY":
     {
-        "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : .5/(rast.gene_length*2),"max_iter":1000,"selection":"tournament","elitism":0.1}, 
-        "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 25./(beale.gene_length*2),"max_iter":1000,"selection":"tournament","elitism":0.1},
-        "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : .25/(himme.gene_length*2),"max_iter":1000,"selection":"tournament","elitism":0.1}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":1000,"selection":"tournament","elitism":0.2}
+    "Rastrigin":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(rast.gene_length*2),  0.75/(rast.gene_length*2),  1./(rast.gene_length*2)],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]}, 
+    "Beale":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(beale.gene_length*2),  0.75/(beale.gene_length*2),  1./(beale.gene_length*2)],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]},
+    "Himmelblau":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(himme.gene_length*2),  0.75/(himme.gene_length*2),  1./(himme.gene_length*2)],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]}, 
+    "Eggholder":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(egg.gene_length*2),  0.75/(egg.gene_length*2),  1./(egg.gene_length*2)],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]}
     },
     "SUS_BINARY":
     {
-        "Rastrigin":{"n_individuals" : 500,"pc" : 0.9,"pm" :.5/(rast.gene_length*2),"max_iter":1000,"selection":"sus"}, 
-        "Beale":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":1000,"selection":"sus"},
-        "Himmelblau":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":1000,"selection":"sus"}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":1000,"selection":"sus"}
+    "Rastrigin":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" :[ 0.25/(rast.gene_length*2),  0.75/(rast.gene_length*2),  1./(rast.gene_length*2)],"max_iter":[1000],"selection":["sus"]}, 
+    "Beale":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(beale.gene_length*2),  0.75/(beale.gene_length*2),  1./(beale.gene_length*2)],"max_iter":[1000],"selection":["sus"]},
+    "Himmelblau":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(himme.gene_length*2),  0.75/(himme.gene_length*2),  1./(himme.gene_length*2)],"max_iter":[1000],"selection":["sus"]}, 
+    "Eggholder":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(egg.gene_length*2),  0.75/(egg.gene_length*2),  1./(egg.gene_length*2)],"max_iter":[1000],"selection":["sus"]}
     },
     "SUS_E_BINARY":
     {
-        "Rastrigin":{"n_individuals" : 500,"pc" : 0.9,"pm" : .5/(rast.gene_length*2),"max_iter":1000,"selection":"sus","elitism":0.1}, 
-        "Beale":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(beale.gene_length*2),"max_iter":1000,"selection":"sus","elitism":0.1},
-        "Himmelblau":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(himme.gene_length*2),"max_iter":1000,"selection":"sus","elitism":0.1}, 
-        "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./(egg.gene_length*2),"max_iter":1000,"selection":"sus","elitism":0.2}
+    "Rastrigin":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(rast.gene_length*2),  0.75/(rast.gene_length*2),  1./(rast.gene_length*2)],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]}, 
+    "Beale":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(beale.gene_length*2),  0.75/(beale.gene_length*2),  1./(beale.gene_length*2)],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]},
+    "Himmelblau":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(himme.gene_length*2),  0.75/(himme.gene_length*2),  1./(himme.gene_length*2)],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]}, 
+    "Eggholder":{"n_individuals" : [500],"pc" :[0.85, 0.9, 0.95],"pm" : [ 0.25/(egg.gene_length*2),  0.75/(egg.gene_length*2),  1./(egg.gene_length*2)],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]}
     }
     }
     avg_times = {
@@ -202,7 +217,16 @@ if BINARY:
         "SUS_BINARY":{"Rastrigin": None, "Beale" : None, "Himmelblau" : None, "Eggholder" : None},
         "SUS_E_BINARY":{"Rastrigin": None, "Beale" : None, "Himmelblau" : None, "Eggholder" : None}
     }
-    start(fns, params, avg_times, avg_iters, "BINARY")
+    runs = 3
+    print(f"Starting parameter sweep for Binary codification over the following:\n {params}")
+    logging.info(f"Starting parameter sweep for Binary codification:\n {params}")
+    print(f"Parameter sweep will run each parameter combination for {runs} runs")
+    logging.info(f"Parameter sweep will run each parameter combination for {runs} runs")
+    get_best_parameters(fns, params, runs)
+    print(f"Best parameters for Binary codification after parameter sweep are:\n {params}")
+    logging.info(f"Best parameters for Binary codification after parameter sweep are:\n {params}")
+    plot_fixed_params(fns, params, avg_times, avg_iters, "BINARY")
+
 if REAL:
     rast = RealRastrigin()
     beale = RealBeale()
@@ -212,45 +236,45 @@ if REAL:
     params = {
         "PS_REAL":
         {
-            "Rastrigin":{"n_individuals" : 500, "pc" : 0.9, "pm" : 1./(2), "max_iter":1000,"selection":"proportional"}, 
-            "Beale":{"n_individuals" : 500, "pc" : 0.9, "pm" : 1./(2), "max_iter":1000,"selection":"proportional"},
-            "Himmelblau":{"n_individuals" : 500, "pc" : 0.9, "pm" : 1./(2), "max_iter":1000,"selection":"proportional"}, 
-            "Eggholder":{"n_individuals" : 500, "pc" : 0.9, "pm" : 1./(2), "max_iter":1000,"selection":"proportional"}
+            "Rastrigin":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"]}, 
+            "Beale":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"]},
+            "Himmelblau":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"]}, 
+            "Eggholder":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"]}
         },
         "PS_E_REAL":
         {
-            "Rastrigin":{"n_individuals" : 500, "pc" : 0.8, "pm" : 1./(2), "max_iter":1000, "elitism":0.1,"selection":"proportional"}, 
-            "Beale":{"n_individuals" : 500, "pc" : 0.8, "pm" : 1/(2), "max_iter":1000, "elitism":0.1,"selection":"proportional"},
-            "Himmelblau":{"n_individuals" : 500, "pc" : 0.8, "pm" : 1/(2), "max_iter":1000, "elitism":0.1,"selection":"proportional"}, 
-            "Eggholder":{"n_individuals" : 500, "pc" : 0.8, "pm" : 1/(2), "max_iter":1000, "elitism":0.2,"selection":"proportional"}
+            "Rastrigin":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]}, 
+            "Beale":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]},
+            "Himmelblau":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]}, 
+            "Eggholder":{"n_individuals":[500], "pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5], "max_iter":[1000],"selection":["proportional"], "elitism":[0.1, 0.2, 0.3]}
         },
         "TS_REAL":
         {
-            "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : 1/(2),"max_iter":1000,"selection":"tournament"}, 
-            "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1/(2),"max_iter":1000,"selection":"tournament"},
-            "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" :1/(2),"max_iter":1000,"selection":"tournament"}, 
-            "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1/(2),"max_iter":1000,"selection":"tournament"}
+            "Rastrigin":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"]}, 
+            "Beale":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95], "pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"]},
+            "Himmelblau":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" :[0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"]}, 
+            "Eggholder":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"]}
         },
         "TS_E_REAL":
         {
-            "Rastrigin":{"n_individuals" : 100,"pc" : 0.9,"pm" : 1/(2),"max_iter":1000,"selection":"tournament","elitism":0.1}, 
-            "Beale":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1/2,"max_iter":1000,"selection":"tournament","elitism":0.1},
-            "Himmelblau":{"n_individuals" : 100,"pc" : 0.95,"pm" : 1/2,"max_iter":1000,"selection":"tournament","elitism":0.1}, 
-            "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"tournament","elitism":0.2}
+            "Rastrigin":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]}, 
+            "Beale":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]},
+            "Himmelblau":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]}, 
+            "Eggholder":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["tournament"],"elitism":[0.1, 0.2, 0.3]}
         },
         "SUS_REAL":
         {
-            "Rastrigin":{"n_individuals" : 500,"pc" : 0.9,"pm" :1/2,"max_iter":1000,"selection":"sus"}, 
-            "Beale":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"sus"},
-            "Himmelblau":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"sus"}, 
-            "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"sus"}
+            "Rastrigin":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" :[0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"]}, 
+            "Beale":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"]},
+            "Himmelblau":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"]}, 
+            "Eggholder":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"]}
         },
         "SUS_E_REAL":
         {
-            "Rastrigin":{"n_individuals" : 500,"pc" : 0.9,"pm" : 1/2,"max_iter":1000,"selection":"sus","elitism":0.1}, 
-            "Beale":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"sus","elitism":0.1},
-            "Himmelblau":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"sus","elitism":0.1}, 
-            "Eggholder":{"n_individuals" : 500,"pc" : 0.95,"pm" : 1./2,"max_iter":1000,"selection":"sus","elitism":0.2}
+            "Rastrigin":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]}, 
+            "Beale":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]},
+            "Himmelblau":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]}, 
+            "Eggholder":{"n_individuals":[500],"pc" :[0.85, 0.9, 0.95],"pm" : [0.2, 0.25, 0.5],"max_iter":[1000],"selection":["sus"],"elitism":[0.1, 0.2, 0.3]}
         }
     }
     avg_times = {
@@ -269,6 +293,30 @@ if REAL:
         "SUS_REAL":{"Rastrigin": None, "Beale" : None, "Himmelblau" : None, "Eggholder" : None},
         "SUS_E_REAL":{"Rastrigin": None, "Beale" : None, "Himmelblau" : None, "Eggholder" : None}
     }
-    start(fns, params, avg_times, avg_iters, "REAL")
+    # avg_times = {
+    #     "PS_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "PS_E_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "TS_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "TS_E_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "SUS_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "SUS_E_REAL":{"Himmelblau" : None, "Eggholder" : None}
+    # }
+    # avg_iters = {
+    #     "PS_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "PS_E_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "TS_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "TS_E_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "SUS_REAL":{"Himmelblau" : None, "Eggholder" : None},
+    #     "SUS_E_REAL":{"Himmelblau" : None, "Eggholder" : None}
+    # }
+    runs = 3
+    print(f"Starting parameter sweep for Real codification over the following:\n {params}")
+    logging.info(f"Starting parameter sweep for Real codification:\n {params}")
+    print(f"Parameter sweep will run each parameter combination for {runs} runs")
+    logging.info(f"Parameter sweep will run each parameter combination for {runs} runs")
+    get_best_parameters(fns, params, runs)
+    print(f"Best parameters for Real codification after parameter sweep are:\n {params}")
+    logging.info(f"Best parameters for Real codification after parameter sweep are:\n {params}")
+    plot_fixed_params(fns, params, avg_times, avg_iters, "REAL")
 
 

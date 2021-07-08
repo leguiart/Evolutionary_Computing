@@ -1,11 +1,10 @@
 
-from abc import abstractmethod
 import numpy as np
 import random
 import math
 
 class GeneticAlgorithm:
-    def __init__(self, pc = 0.6, pm = 0.1, max_iter = 5000, elitism = None, selection = "proportional"):
+    def __init__(self, pc = 0.6, pm = 0.1, max_iter = 5000, selection = "proportional", elitism = None):
         self.max_iter = max_iter
         self.pc = pc
         self.pm = pm
@@ -22,7 +21,7 @@ class GeneticAlgorithm:
         while its <= self.max_iter:
             self.pop, solution = self.select(problem, self.pop)
             if len(solution) > 0:
-                print(its)
+                #print(its)
                 if type(self.pop) is np.ndarray:
                     return problem.decode(self.pop[solution, :]), its
                 else:

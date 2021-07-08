@@ -1,0 +1,59 @@
+
+#Conjunto de parametros 1
+#Agregamos no terminales, primer argumento es la función, segundo argumento es la aridad
+pset.addPrimitive(operator.add, 2)
+pset.addPrimitive(operator.mul, 2)
+#pset.addPrimitive(protectedDiv, 2)
+pset.addPrimitive(operator.neg, 1)
+#pset.addPrimitive(math.cos, 1)
+#pset.addPrimitive(math.sin, 1)
+#pset.addPrimitive(math.tan, 1)
+#pset.addPrimitive(protectedExp, 1)
+pset.addPrimitive(protectedSqrt, 1)
+pset.addPrimitive(operator.abs, 1)
+
+#Agregamos terminales (constantes)
+# for i in range(1, 2):
+#     pset.addTerminal(float(i))
+#pset.addTerminal(math.pi)
+
+#Agregamos terminales (argumentos), al agregar nuestras primitivas con su aridad, se crearon
+#2 argumentos por defecto, los renombramos como 'x' y 'y'
+pset.renameArguments(ARG0="x")
+pset.addEphemeralConstant('eff1', lambda: random.uniform(-213, 0))
+#srp = SymbolicRegressionProblem([(0., 5.)], pset, y, 17, stop_thresh=100.)
+srp = SymbolicRegressionProblem([(1., float(len(y)))], pset, y, 17, stop_thresh=100.)
+
+
+ga = GeneticAlgorithm(pc = 0.9, pm = 0.05, selection="tournament", max_iter=500, elitism=0.1)
+sol, gens = ga.evolve(srp, 50)
+
+
+Symbolic regression best solution: 
+ add(add(protectedSqrt(mul(add(add(-152.26074448029533, -183.19070801413505), add(x, -183.19070801413505)), add(add(-183.19070801413505, protectedSqrt(mul(add(add(-183.19070801413505, -183.19070801413505), add(add(x, x), protectedSqrt(mul(add(add(add(add(x, -183.19070801413505), x), -183.19070801413505), x), add(x, -183.19070801413505))))), add(add(add(add(add(-183.19070801413505, add(add(x, -183.19070801413505), add(add(-183.19070801413505, x), -183.19070801413505))), mul(-155.99370914470407, -51.81029570025399)), -183.19070801413505), -183.19070801413505), add(add(add(add(x, x), -183.19070801413505), add(x, -183.19070801413505)), add(x, add(-183.19070801413505, add(x, -183.19070801413505)))))))), add(add(add(x, add(add(-183.19070801413505, -183.19070801413505), add(add(x, x), -183.19070801413505))), add(x, add(add(-183.19070801413505, add(add(x, -183.19070801413505), add(add(x, -183.19070801413505), add(add(x, -183.19070801413505), add(x, add(add(-183.19070801413505, -183.19070801413505), x)))))), x))), add(add(add(x, -183.19070801413505), add(x, -183.19070801413505)), add(protectedSqrt(mul(add(add(add(add(add(x, add(x, -183.19070801413505)), add(add(x, x), x)), -183.19070801413505), -183.19070801413505), add(add(x, add(x, -183.19070801413505)), add(x, -183.19070801413505))), add(add(add(x, -183.19070801413505), add(x, -183.19070801413505)), add(add(x, -183.19070801413505), x)))), protectedSqrt(-183.19070801413505))))))), protectedSqrt(mul(x, x))), protectedSqrt(mul(add(add(add(add(-183.19070801413505, add(add(x, -183.19070801413505), add(add(-183.19070801413505, x), -183.19070801413505))), mul(-155.99370914470407, -51.81029570025399)), -183.19070801413505), -183.19070801413505), add(add(add(add(add(protectedSqrt(mul(x, x)), -183.19070801413505), x), add(protectedSqrt(mul(add(add(add(add(x, -183.19070801413505), x), -183.19070801413505), x), add(add(add(x, -183.19070801413505), add(add(x, -183.19070801413505), -183.19070801413505)), -183.19070801413505))), -183.19070801413505)), x), x))))
+
+#Conjunto de parametros 2
+#Agregamos no terminales, primer argumento es la función, segundo argumento es la aridad
+pset.addPrimitive(operator.add, 2)
+pset.addPrimitive(operator.mul, 2)
+#pset.addPrimitive(protectedDiv, 2)
+pset.addPrimitive(operator.neg, 1)
+pset.addPrimitive(math.cos, 1)
+pset.addPrimitive(math.sin, 1)
+#pset.addPrimitive(math.tan, 1)
+#pset.addPrimitive(protectedExp, 1)
+pset.addPrimitive(protectedSqrt, 1)
+pset.addPrimitive(operator.abs, 1)
+
+#Agregamos terminales (constantes)
+# for i in range(1, 2):
+#     pset.addTerminal(float(i))
+#pset.addTerminal(math.pi)
+
+#Agregamos terminales (argumentos), al agregar nuestras primitivas con su aridad, se crearon
+#2 argumentos por defecto, los renombramos como 'x' y 'y'
+pset.renameArguments(ARG0="x")
+pset.addEphemeralConstant('eff1', lambda: random.uniform(-2.5, 0))
+srp = SymbolicRegressionProblem([(0., 5.)], pset, y, 17, stop_thresh=100.)
+Symbolic regression best solution:
+  mul(add(add(x, add(add(add(sin(x), add(mul(add(x, x), sin(x)), add(add(x, x), add(cos(add(x, x)), add(cos(add(x, x)), protectedSqrt(sin(x))))))), add(protectedSqrt(x), add(add(add(add(x, -0.4194563256837087), add(cos(cos(add(x, x))), add(cos(cos(add(x, add(cos(x), x)))), x))), add(add(x, add(add(add(x, x), add(x, x)), add(add(x, cos(-0.6014588440741915)), add(add(x, x), x)))), add(mul(add(x, x), sin(x)), -0.4194563256837087))), add(add(add(add(cos(add(add(abs(x), x), cos(add(x, x)))), add(x, add(protectedSqrt(x), add(cos(add(x, x)), x)))), add(add(add(x, add(sin(x), x)), abs(mul(-0.8635297113495377, -1.3107186753747198))), x)), add(x, add(add(add(x, add(x, x)), cos(add(x, x))), x))), add(sin(x), x))))), add(sin(x), add(add(cos(add(cos(add(x, x)), x)), add(add(cos(add(cos(-0.4194563256837087), add(x, x))), add(cos(add(x, add(cos(add(x, add(x, -0.4194563256837087))), x))), neg(-1.899702710288039))), add(cos(sin(x)), add(cos(add(x, x)), x)))), add(cos(add(add(add(x, x), add(add(x, x), add(x, x))), protectedSqrt(add(x, add(cos(add(add(x, add(x, -0.4194563256837087)), protectedSqrt(x))), add(x, add(x, -0.6014588440741915))))))), add(x, x)))))), add(add(add(x, x), cos(add(x, x))), add(add(add(x, add(add(cos(add(x, x)), add(sin(cos(add(add(add(x, x), add(x, add(x, -0.4194563256837087))), protectedSqrt(x)))), add(x, add(cos(add(add(add(x, x), add(x, add(x, -0.4194563256837087))), protectedSqrt(x))), x)))), add(add(-1.0998860715047434, x), x))), add(add(x, add(add(x, add(cos(add(x, x)), add(cos(add(add(add(x, x), neg(x)), protectedSqrt(x))), add(add(x, x), x)))), x)), add(add(add(x, add(add(x, -0.4194563256837087), x)), add(add(x, add(add(x, add(cos(cos(-0.6014588440741915)), x)), add(add(add(add(x, x), cos(add(x, x))), protectedSqrt(x)), x))), add(cos(add(cos(add(add(x, -0.4194563256837087), x)), add(x, x))), add(cos(add(add(add(x, x), add(x, x)), -0.4194563256837087)), add(abs(neg(-2.3067548438201153)), add(cos(add(x, x)), add(x, x))))))), x))), add(add(cos(add(add(add(x, x), add(x, x)), protectedSqrt(x))), add(add(x, x), x)), add(cos(add(x, x)), add(cos(add(x, x)), add(add(x, x), add(cos(x), add(cos(add(add(protectedSqrt(x), x), cos(add(x, x)))), add(x, add(protectedSqrt(x), add(cos(add(x, x)), x)))))))))))), add(sin(add(cos(add(add(add(x, x), add(sin(add(x, add(x, -0.4194563256837087))), x)), add(add(x, x), x))), x)), add(sin(x), add(add(cos(add(x, x)), add(cos(add(add(cos(add(x, protectedSqrt(x))), add(cos(add(add(x, -0.4194563256837087), x)), x)), -2.20980308243909)), add(add(cos(add(cos(add(add(x, -0.4194563256837087), x)), add(x, x))), add(cos(add(x, add(cos(add(x, add(x, -0.4194563256837087))), x))), neg(-1.899702710288039))), add(cos(add(add(add(x, x), add(x, add(x, -0.4194563256837087))), protectedSqrt(x))), add(x, x))))), add(cos(add(x, x)), add(cos(add(add(add(x, x), add(x, add(x, -0.4194563256837087))), protectedSqrt(x))), add(cos(add(cos(add(add(cos(add(cos(add(x, x)), add(-1.0998860715047434, x))), x), x)), add(x, x))), x)))))))

@@ -63,7 +63,7 @@ class BaseProblem(IProblem):
 
     def evaluate(self, X):
         decoded_rep = self.decode(X)
-        X_eval = self.a_eval(decoded_rep)
+        X_eval = self.a_eval(decoded_rep, X)
         return X_eval
 
     def crossover(self, X, pc, elitism):
@@ -160,13 +160,18 @@ class _BaseGeneticProgrammingProblem(BaseProblem):
 
 
 class SymbolicRegressionProblem(_BaseGeneticProgrammingProblem):
-    def __init__(self, bounds, pset, real_values, height_limit, mutation_type = "Branch"):
+    def __init__(self, bounds, pset, real_values, height_limit, stop_thresh = 0.2,  mutation_type = "Branch"):
         super().__init__(mutation_type)
         self.bounds = bounds
         self.height_limit = height_limit
         self.pset = pset
         self.real_values = real_values
-        self.points = np.linspace(self.bounds[0], self.bounds[1], num = len(real_values))
+        self.stop_thresh = stop_thresh
+        param_values = []
+        for param_bound in self.bounds:
+            param_values += [list(np.linspace(param_bound[0], param_bound[1], num = len(real_values)))]
+
+        self.points = list(it.product(*param_values))
 
     def a_eval(self, X_decoded, X_encoded):
         m = len(self.points)
@@ -175,16 +180,16 @@ class SymbolicRegressionProblem(_BaseGeneticProgrammingProblem):
             try:
                 s = 0
                 for i in range(m):
-                    s += (func(self.points[i]) - self.real_values[i])**2
+                    s += (func(*self.points[i]) - self.real_values[i])**2
                 X_fitness += [- (1./m)*s]
             except Exception as e:
                 print(e)
                 x_encoded = X_encoded[j]
                 print(gp.PrimitiveTree(x_encoded))
-        return X_fitness
+        return np.array(list(zip(X_fitness, list(range(len(X_fitness))))), dtype = [('fitness', float),('index', int)])
 
     def stop_criteria(self, X_eval):
-        return list(np.where(X_eval >= - 0.2)[0])
+        return list(np.where(X_eval >= - self.stop_thresh)[0])
 
 
 class BitParityCheck(_BaseGeneticProgrammingProblem):
@@ -316,10 +321,11 @@ class _BaseIntegerProblem(BaseProblem):
 
 
 class _BaseRealProblem(BaseProblem):
-    def __init__(self, thresh, bounds, n_dim = 2):
+    def __init__(self, thresh, bounds, rang_param = 0.1, n_dim = 2):
         self.n_dim = n_dim
         self.thresh = thresh
         self.bounds = bounds
+        self.rang_param = rang_param
 
     def stop_criteria(self, X_eval):
         return list(np.where(X_eval >= self.thresh)[0])
@@ -346,6 +352,8 @@ class _BaseRealProblem(BaseProblem):
                 alphas = self.get_crossover_points(X.shape[1])
                 X[2*i + elitism_num,:] += alphas * (X[2*i + 1 + elitism_num, :] - X[2*i + elitism_num,:])
                 X[2*i + 1 + elitism_num,:] += alphas * (X[2*i + elitism_num,:] - X[2*i + 1 + elitism_num, :])
+                X[2*i + elitism_num,:] = np.clip(X[2*i + elitism_num,:], self.bounds[0], self.bounds[1])
+                X[2*i + 1 + elitism_num,:] = np.clip(X[2*i + 1 + elitism_num,:], self.bounds[0], self.bounds[1])
         return X
 
     def get_mutation(self, shape):
@@ -355,7 +363,7 @@ class _BaseRealProblem(BaseProblem):
         if not elitism:
             elitism = 0
 
-        rang = (self.bounds[1] - self.bounds[0])*.0001
+        rang = (self.bounds[1] - self.bounds[0])*self.rang_param
         mutate_m = self.get_mutation((X.shape[0], X.shape[1]))
         
         mutate_plus_minus = self.get_mutation((X.shape[0], X.shape[1]))
@@ -372,7 +380,7 @@ class _BaseRealProblem(BaseProblem):
             mutate_delta[mutate_delta < 1.] = 0.
             deltas = (mutate_delta @ (2**-np.arange(self.n_dim, dtype = np.float64)[:, np.newaxis])).T
             X[i, :] = X[i, :] + mutate_m[i, :] * mutate_plus_minus[i, :] * rang * deltas
-
+            X[i, :] = np.clip(X[i, :], self.bounds[0], self.bounds[1])
         return X
 
 class BaseNQueen(BaseProblem):
@@ -468,23 +476,23 @@ class BinaryEggholder(_BaseBinaryProblem, BaseEggholder):
 
 
 class RealRastrigin(_BaseRealProblem, BaseRastrigin):
-    def __init__(self, n_dim = 2):
-        super().__init__(99.99, (-5.12, 5.12), n_dim=n_dim)
+    def __init__(self, rang_param = .0001, n_dim = 2):
+        super().__init__(99.99, (-5.12, 5.12), rang_param, n_dim=n_dim)
         BaseRastrigin.__init__(self)
 
 class RealBeale(_BaseRealProblem, BaseBeale):
-    def __init__(self):
-        super().__init__(149999.99, (-4.5, 4.5), n_dim=2)
+    def __init__(self, rang_param = .0001):
+        super().__init__(149999.99, (-4.5, 4.5), rang_param, n_dim=2)
         BaseBeale.__init__(self)
 
 class RealHimmelblau(_BaseRealProblem, BaseHimmelblau):
-    def __init__(self):
-        super().__init__(2199.99, (-5., 5.), n_dim=2)
+    def __init__(self, rang_param = .001):
+        super().__init__(2199.99, (-5., 5.), rang_param, n_dim=2)
         BaseHimmelblau.__init__(self)
 
 class RealEggholder(_BaseRealProblem, BaseEggholder):
-    def __init__(self):
-        super().__init__(2157., (-512., 512.), n_dim=2)
+    def __init__(self, rang_param = .001):
+        super().__init__(2157., (-512., 512.), rang_param, n_dim=2)
         BaseEggholder.__init__(self)
 
 

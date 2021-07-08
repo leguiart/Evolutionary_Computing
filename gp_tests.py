@@ -12,20 +12,20 @@ import operator
 import math
 import random
 
-GLOBAL_CONF = {"Symbolic Regression":False, "Parity Check":False, "Parity Check without XOR":False}
-GLOBAL_CONF_NEUTRALITY = {"Neutrality_node" :   False, "Neutrality_branch" :  False, "Neutrality_product" :  True}
+GLOBAL_CONF = {"Symbolic Regression":True, "Parity Check":False, "Parity Check without XOR":False}
+GLOBAL_CONF_NEUTRALITY = {"Neutrality_node" :   False, "Neutrality_branch" :  False, "Neutrality_product" :  False}
 
 
 def plot_estimated_solution(est_solutions, srp, sub_title, sup_title, show = True, store = False, store_title = "symbolic_regression_estimate"):
     func = gp.compile(est_solutions, srp.pset)
-    y_estim = np.array([func(point) for point in srp.points])
+    y_estim = np.array([func(*point) for point in srp.points])
     labels = ['estimated y', 'real y']
     y_s = [y_estim, srp.real_values]
     plot_superposed(srp.points, y_s, plot_labels=labels, sub_title=sub_title, sup_title = sup_title, show=show, store=store, store_path = store_title)
 
 def plot_estimated_solutions(est_solutions, srp, sub_title, sup_title, show = True, store = False, store_title = "symbolic_regression_estimate"):
     funcs = list(map(lambda est_solution : (gp.compile(est_solution[0], srp.pset), est_solution[1]) if type(est_solution) is tuple else gp.compile(est_solution, srp.pset), est_solutions))
-    y_estims = list(map(lambda func : ([func[0](point) for point in srp.points], func[1]) if type(func) is tuple else [func(point) for point in srp.points] , funcs))
+    y_estims = list(map(lambda func : ([func[0](*point) for point in srp.points], func[1]) if type(func) is tuple else [func(point) for point in srp.points] , funcs))
     labels = [None]*(len(y_estims) - 1)
     y_best = None
     y_original = None
@@ -54,8 +54,13 @@ root.addHandler(handler)
 
 colors = ['b', 'g', 'y', 'c', 'k', 'm']
 
-y = "3.4370    3.3868    3.3651    3.3709    3.4031    3.4598    3.5394    3.6395    3.7578    3.8917    4.0384    4.1947    4.3576    4.5237    4.6896    4.8518    5.0065    5.1502    5.2792    5.3895    5.4774    5.5389    5.5697    5.5654    5.5208    5.4299    5.2843    5.0717    4.7694    4.3212    3.1416    4.3212    4.7694    5.0717    5.2843    5.4299    5.5208    5.5654    5.5697    5.5389    5.4774    5.3895    5.2792    5.1502    5.0065    4.8518    4.6896    4.5237    4.3576    4.1947    4.0384    3.8917    3.7578    3.6395    3.5394    3.4598    3.4031    3.3709    3.3651    3.3868    3.4370    3.5165    3.6256    3.7645    3.9327    4.1298    4.3548    4.6066    4.8837    5.1843    5.5065".split()
-y = list(map(lambda x : float(x),y))
+#y = "3.4370    3.3868    3.3651    3.3709    3.4031    3.4598    3.5394    3.6395    3.7578    3.8917    4.0384    4.1947    4.3576    4.5237    4.6896    4.8518    5.0065    5.1502    5.2792    5.3895    5.4774    5.5389    5.5697    5.5654    5.5208    5.4299    5.2843    5.0717    4.7694    4.3212    3.1416    4.3212    4.7694    5.0717    5.2843    5.4299    5.5208    5.5654    5.5697    5.5389    5.4774    5.3895    5.2792    5.1502    5.0065    4.8518    4.6896    4.5237    4.3576    4.1947    4.0384    3.8917    3.7578    3.6395    3.5394    3.4598    3.4031    3.3709    3.3651    3.3868    3.4370    3.5165    3.6256    3.7645    3.9327    4.1298    4.3548    4.6066    4.8837    5.1843    5.5065".split()
+y = []
+f = open('datos_examen_2021II.txt', 'r')
+data = [[]]
+for l in f:
+    y.append(float(l))
+#y = list(map(lambda x : float(x),y))
 
 ### Primitivas para regresión simbólica
 #Creamos un conjunto de primitivas llamado "main"
@@ -68,7 +73,7 @@ pset.addPrimitive(protectedDiv, 2)
 pset.addPrimitive(operator.neg, 1)
 pset.addPrimitive(math.cos, 1)
 pset.addPrimitive(math.sin, 1)
-pset.addPrimitive(math.tan, 1)
+#pset.addPrimitive(math.tan, 1)
 pset.addPrimitive(protectedExp, 1)
 pset.addPrimitive(protectedSqrt, 1)
 pset.addPrimitive(operator.abs, 1)
@@ -81,8 +86,9 @@ pset.addPrimitive(operator.abs, 1)
 #Agregamos terminales (argumentos), al agregar nuestras primitivas con su aridad, se crearon
 #2 argumentos por defecto, los renombramos como 'x' y 'y'
 pset.renameArguments(ARG0="x")
-pset.addEphemeralConstant('eff1', lambda: random.uniform(-1, 1))
-srp = SymbolicRegressionProblem((-3., 4.), pset, y, 17)
+pset.addEphemeralConstant('eff1', lambda: random.uniform(-2.5, 0))
+srp = SymbolicRegressionProblem([(0., 5.)], pset, y, 17, stop_thresh=100.)
+#srp = SymbolicRegressionProblem([(1., float(len(y)))], pset, y, 17, stop_thresh=100.)
 
 ### Primitivas para paridad par
 S = [True, False, False, True, False, True, True, False, False, True, True, False, True, False, False, True]
@@ -138,8 +144,8 @@ for i in range(5):
         try_flag = True
         while try_flag:
             try:
-                ga = GeneticAlgorithm(pc = 0.9, pm = 0.01, selection="tournament", max_iter=500, elitism=0.1)
-                sol, gens = ga.evolve(srp, 300)
+                ga = GeneticAlgorithm(pc = 0.9, pm = 0.1, selection="tournament", max_iter=500, elitism=0.1)
+                sol, gens = ga.evolve(srp, 100)
                 try_flag = False
             except Exception as e:
                 print(e)
@@ -147,15 +153,14 @@ for i in range(5):
                 srp.avg_lengths = []
 
         #plot_estimated_solution(sol[0], srp,  "Y estimated vs Y real", f"Model for run {i}", show=False, store = True, store_title=f"symbolic_regression_{i}")
-        
+        if symbolic_regression_best > abs(ga.best[-1]):
+            if symbolic_regression_best_solution:
+                symbolic_regression_solutions += [(symbolic_regression_best_solution[0], "0.8")] 
+            symbolic_regression_best = abs(ga.best[-1])
+            symbolic_regression_best_solution = (sol[0], "b")
+        else:
+            symbolic_regression_solutions += [(sol[0], "0.8")] 
         if gens < 500:
-            if symbolic_regression_best > -ga.best[-1]:
-                if symbolic_regression_best_solution:
-                    symbolic_regression_solutions += [(symbolic_regression_best_solution[0], "0.8")] 
-                symbolic_regression_best = -ga.best[-1]
-                symbolic_regression_best_solution = (sol[0], "b")
-            else:
-                symbolic_regression_solutions += [(sol[0], "0.8")] 
             logging.info("Symbolic Regression global solution: ")
             print("Symbolic Regression global solution: ")
         else:
