@@ -76,10 +76,9 @@ class EvolutionaryAlgorithm:
         its = 0
         self.elitism_num = math.floor(self.elitism*n_individuals)
         self.pop = problem.populate(n_individuals)
-        self.pop = self._select(problem, self.pop)
         while not problem.stop_criteria(self.pop) and its < self.max_iter: 
-            self.pop = problem.generate(self.pop)
             self.pop = self._select(problem, self.pop)
+            self.pop = problem.generate(self.pop)
             its+=1
 
         solutions = problem.extract_solutions()

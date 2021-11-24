@@ -7,9 +7,9 @@ import itertools as it
 from hklearn_genetic.Problems.BaseGAProblem import _BaseGAProblem
 
 class _BaseIntegerGAProblem(_BaseGAProblem):
-    def __init__(self, evaluator, thresh, pc = 0.6, pm = 0.1, elitism = 0., n_dim = 2):
-        super().__init__(evaluator, thresh, pc=pc, pm=pm, elitism=elitism)
-        self.n_dim = n_dim
+    def __init__(self, params):
+        super().__init__(params)
+        self.n_dim = params["n_dim"]
 
     def populate(self, n_individuals : int) -> list:
         X_mat = np.random.randint(self.n_dim, size = (n_individuals, self.n_dim))
@@ -27,7 +27,7 @@ class _BaseIntegerGAProblem(_BaseGAProblem):
         return np.random.randint(0, length)
 
     def _crossover(self, X, pc, elitism_num):
-        X_mat = ProblemUtils._to_matrix(X)
+        X_mat = ProblemUtils._to_matrix_phenotypes(X)
         n_cross = (X_mat.shape[0] - elitism_num) // 2
         prob_cross = self._get_crossover_probs(n_cross)
         for i, p in enumerate(prob_cross):
@@ -47,7 +47,7 @@ class _BaseIntegerGAProblem(_BaseGAProblem):
     def _mutate(self, X, pm, elitism_num):
         mutate_m = self._get_mutation((X.shape[0], 1))
         mutate_m = mutate_m <= pm
-        X_mat = ProblemUtils._to_matrix(X)
+        X_mat = ProblemUtils._to_matrix_phenotypes(X)
         for i in range(X_mat.shape[0] - elitism_num):
             if mutate_m[i]:
                 indices = np.random.permutation(X_mat.shape[1])[0 : 2]

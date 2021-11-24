@@ -44,7 +44,8 @@ class _BaseRealBGAProblem(_BaseGAProblem):
         by first decoding the genotype, filling the phenotype representation and then evaluating
         that phenotype
     """
-    def __init__(self, evaluator : IEvaluator, thresh, bounds : tuple, pc : float = 0.6, pm : float = 0.1, elitism : float = 0., rang_param : float = 0.1, n_dim : int= 2):
+    #def __init__(self, evaluator : IEvaluator, thresh, bounds : tuple, pc : float = 0.6, pm : float = 0.1, elitism : float = 0., rang_param : float = 0.1, n_dim : int= 2):
+    def __init__(self, params):
         """
         Parameters
         ----------
@@ -59,10 +60,10 @@ class _BaseRealBGAProblem(_BaseGAProblem):
         rang_param : float, optional
             Fixed rate of the mutation range (default is 0.1)
         """
-        super().__init__(evaluator, thresh, pc=pc, pm=pm, elitism=elitism)
-        self.n_dim = n_dim
-        self.bounds = bounds
-        self.rang_param = rang_param
+        super().__init__(params)
+        self.n_dim = params["n_dim"] if "n_dim" in params else 2
+        self.bounds = params["bounds"]
+        self.rang_param = params["rang_param"] if "rang_param" in params else 0.1
 
     def populate(self, n_individuals : int) -> list:
         """Fill out a real number matrix of dimensions n_individuals X n_dim with random values in (bounds[0], bounds[1])
@@ -100,17 +101,22 @@ class _BaseRealBGAProblem(_BaseGAProblem):
         elitism_num : int
             Number of individuals from the last rows to be kept without modification
         """
-        X_mat = ProblemUtils._to_matrix(X)
+        X_mat = ProblemUtils._to_matrix_genotypes(X)
+        np.random.shuffle(X_mat)
         n_cross = (X_mat.shape[0] - elitism_num) // 2
         prob_cross = self._get_crossover_probs(n_cross)
         #Extended intermediate recombination
         for i, p in enumerate(prob_cross):
             if p <= pc:
                 alphas = self._get_crossover_points(X_mat.shape[1])
-                X_mat[2*i,:] += alphas * (X_mat[2*i + 1, :] - X_mat[2*i,:])
-                X_mat[2*i + 1,:] += alphas * (X_mat[2*i,:] - X_mat[2*i + 1, :])
-                X_mat[2*i,:] = np.clip(X_mat[2*i,:], self.bounds[0], self.bounds[1])
-                X_mat[2*i + 1,:] = np.clip(X_mat[2*i + 1,:], self.bounds[0], self.bounds[1])
+                child1 = X_mat[2*i,:].copy()
+                child2 = X_mat[2*i + 1,:].copy()
+                child1 += alphas * (X_mat[2*i + 1, :] - X_mat[2*i,:])
+                child2 += alphas * (X_mat[2*i,:] - X_mat[2*i + 1, :])
+                X_mat[2*i,:] = child1
+                X_mat[2*i + 1,:] = child2
+                # X_mat[2*i,:] = np.clip(X_mat[2*i,:], self.bounds[0], self.bounds[1])
+                # X_mat[2*i + 1,:] = np.clip(X_mat[2*i + 1,:], self.bounds[0], self.bounds[1])
         return ProblemUtils._to_genotypes(X, X_mat)
 
     def _get_mutation(self, shape):
@@ -128,7 +134,7 @@ class _BaseRealBGAProblem(_BaseGAProblem):
         elitism_num : int
             Number of individuals from the last rows to be kept without modification
         """
-        X_mat = ProblemUtils._to_matrix(X)
+        X_mat = ProblemUtils._to_matrix_genotypes(X)
         rang = (self.bounds[1] - self.bounds[0])*self.rang_param
         mutate_m = self._get_mutation((X_mat.shape[0], X_mat.shape[1]))
         
@@ -148,3 +154,5 @@ class _BaseRealBGAProblem(_BaseGAProblem):
             X_mat[i, :] = np.clip(X_mat[i, :], self.bounds[0], self.bounds[1])
         return ProblemUtils._to_genotypes(X, X_mat)
     
+    def _get_parameters(self):
+        return {"pc" : self.pc, "pm" : self.pm, "elitism" : self.elitism, "rang_param" : self.rang_param, "n_dim" :  self.n_dim, "bounds" :  self.bounds}

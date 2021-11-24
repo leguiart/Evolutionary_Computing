@@ -4,6 +4,7 @@ import numpy as np
 import math
 from hklearn_genetic.Problems.IProblem import IProblem
 from ..utils import ProblemUtils
+import copy
 
 
 class _BaseGAProblem(IProblem):
@@ -24,20 +25,22 @@ class _BaseGAProblem(IProblem):
     function(args*)
         Description
     """
-    def __init__(self, evaluator : IEvaluator, thresh, pc : float = 0.6, pm : float = 0.1, elitism : float = 0., analytics = None):
-        self.evaluator = evaluator
-        self.thresh = thresh
-        self.pc = pc
-        self.pm = pm
-        self.elitism = elitism
+    #def __init__(self, evaluator : IEvaluator, thresh, pc : float = 0.6, pm : float = 0.1, elitism : float = 0., analytics = None):
+    def __init__(self, params):
+        self.evaluator = params["evaluator"]
+        self.thresh = params["thresh"]
+        self.pc = params["pc"] if "pc" in params else 0.6
+        self.pm = params["pm"] if "pm" in params else 0.1
+        self.elitism = params["elitism"]  if "elitism" in params else 0.
         self.solutions = []
-        self.analytics = analytics
+        self.analytics = params["analytics"] if "analytics" in params else None
 
     def generate(self, pop : list) -> list:
         elitism_num = math.floor(self.elitism*len(pop))
-        pop = self._crossover(pop, self.pc, elitism_num)
-        pop = self._mutate(pop, self.pm, elitism_num)
-        return pop
+        pop_c = copy.deepcopy(pop)
+        children_crossover = self._crossover(pop_c, self.pc, elitism_num)
+        children = self._mutate(children_crossover, self.pm, elitism_num)
+        return children
     
     def evaluate(self, X : list) -> list:
         """Applies an evaluation function over an encoded representation of the population
@@ -49,10 +52,9 @@ class _BaseGAProblem(IProblem):
             List of individuals containing their respective genotype
         """
         X_decoded = self._decode(X)
-        X_eval = self.evaluator.evaluate(X_decoded)
+        self.evaluator.evaluate(X_decoded)
         if self.analytics:
-            self.analytics.gather_analytics(X_eval)
-        return X_eval
+            self.analytics.gather_analytics(X_decoded)
 
     def _initialize_from_mat(self, X_mat):
         individuals = []
@@ -90,6 +92,10 @@ class _BaseGAProblem(IProblem):
     #     pass
 
     @abc.abstractmethod
+    def _get_parameters(self):
+        pass
+
+    @abc.abstractmethod
     def _crossover(self, X, pc, elitism):
         pass
 
@@ -103,6 +109,12 @@ class Individual:
         self.genotype = []
         self.phenotype = []
         self.fitness_metric = 0
+        self.rank = -1
+        self.dominated = []
+        self.domination_counter = 0
+        self.crowding_distance = 0
+        self.reference_line = []
+        self.distance = 0
 
     def copy(self):
         cpy = Individual()
@@ -110,3 +122,6 @@ class Individual:
         cpy.phenotype = self.phenotype.copy()
         cpy.fitness_metric = self.fitness_metric
         return cpy
+
+    def dominates(self, x):
+        return (self.fitness_metric <= x.fitness_metric).all() and (self.fitness_metric != x.fitness_metric).any()

@@ -1,11 +1,12 @@
 """
 Real number problems structure to be used in genetic algorithm approaches based on the breeder genetic algorithm.
 Defines a problem which genotype is codified in the domain of real numbers.
-Based on the BGA algorithm for continous parameter optimization (https://ieeexplore.ieee.org/document/6792992).
+Implements SBX crossover and polynomial mutation
 Author: Luis Andrés Eguiarte-Morett (Github: @leguiart)
 License: MIT.
 """
 import numpy as np
+import copy
 from numpy.random.mtrand import beta
 from hklearn_genetic.Problems.BaseGAProblem import _BaseGAProblem
 from ..Evaluators.IEvaluator import IEvaluator
@@ -45,7 +46,8 @@ class _BaseRealGAProblem(_BaseGAProblem):
         by first decoding the genotype, filling the phenotype representation and then evaluating
         that phenotype
     """
-    def __init__(self, evaluator : IEvaluator, thresh, bounds : tuple, pc : float = 0.6, pm : float = 0.1, elitism : float = 0., rang_param : float = 0.1, n_dim : int= 2, analytics = None):
+    #def __init__(self, evaluator : IEvaluator, thresh, bounds : tuple, pc : float = 0.6, pm : float = 0.1, elitism : float = 0., rang_param : float = 0.1, n_dim : int= 2, analytics = None):
+    def __init__(self, params):
         """
         Parameters
         ----------
@@ -60,10 +62,10 @@ class _BaseRealGAProblem(_BaseGAProblem):
         rang_param : float, optional
             Fixed rate of the mutation range (default is 0.1)
         """
-        super().__init__(evaluator, thresh, pc=pc, pm=pm, elitism=elitism, analytics=analytics)
-        self.n_dim = n_dim
-        self.bounds = bounds
-        self.rang_param = rang_param
+        super().__init__(params)
+        self.n_dim = params["n_dim"] if "n_dim" in params else 2
+        self.bounds = params["bounds"]
+        self.rang_param = params["rang_param"] if "rang_param" in params else 0.1
         self.generation_counter = 1
 
     def populate(self, n_individuals : int) -> list:
@@ -98,18 +100,21 @@ class _BaseRealGAProblem(_BaseGAProblem):
         elitism_num : int
             Number of individuals from the last rows to be kept without modification
         """
-        X_mat = ProblemUtils._to_matrix(X)
+        X_mat = ProblemUtils._to_matrix_genotypes(X)
+        np.random.shuffle(X_mat)
         n_cross = (X_mat.shape[0] - elitism_num) // 2
         prob_cross = self._get_crossover_probs(n_cross)
-        n_c = 1
+        n_c = 30
         for i, p in enumerate(prob_cross):
             if p <= pc:
                 u = np.random.uniform(0.,1.)
+                parent1 = copy.deepcopy(X_mat[2*i,:])
+                parent2 = copy.deepcopy(X_mat[2*i + 1,:])
                 beta = (2*u)**(1/(1+n_c)) if u <= 0.5 else (1/(2*(1-u)))**(1/(1+n_c))
-                X_mat[2*i,:] = 0.5 * ((1 + beta)*X_mat[2*i,:] + (1 - beta)*X_mat[2*i + 1, :])
-                X_mat[2*i + 1,:] = 0.5 * ((1 - beta)*X_mat[2*i,:] + (1 + beta)*X_mat[2*i + 1, :])
-                X_mat[2*i,:] = np.clip(X_mat[2*i,:], self.bounds[0], self.bounds[1])
-                X_mat[2*i + 1,:] = np.clip(X_mat[2*i + 1,:], self.bounds[0], self.bounds[1])
+                X_mat[2*i,:] = 0.5 * (parent1 + parent2 - beta*(parent2 - parent1))
+                X_mat[2*i + 1,:] = 0.5 * (parent1 + parent2 + beta*(parent2 - parent1))
+                # X_mat[2*i,:] = np.clip(X_mat[2*i,:], self.bounds[0], self.bounds[1])
+                # X_mat[2*i + 1,:] = np.clip(X_mat[2*i + 1,:], self.bounds[0], self.bounds[1])
         return ProblemUtils._to_genotypes(X, X_mat)
 
     def _get_mutation(self, shape):
@@ -126,7 +131,7 @@ class _BaseRealGAProblem(_BaseGAProblem):
         elitism_num : int
             Number of individuals from the last rows to be kept without modification
         """
-        X_mat = ProblemUtils._to_matrix(X)
+        X_mat = ProblemUtils._to_matrix_genotypes(X)
         delta_max = self.bounds[1] - self.bounds[0]
         #We create a matrix of random numbers which will tell us if the alele of a given individual will be mutated or not
         mutate_m = self._get_mutation((X_mat.shape[0], X_mat.shape[1]))
@@ -136,13 +141,21 @@ class _BaseRealGAProblem(_BaseGAProblem):
         mutate_m[mutate_m <= pm] = 1.
         mutate_m[mutate_m < 1.] = 0.
         #We assign the delta_qs values based on the u values
-        n_m = 100 + self.generation_counter
+        n_m = 20
+        # n_m = 100 + self.generation_counter
         u_s = delta_qs.copy()
-        delta_qs[u_s < .5] = (2*u_s[u_s < .5])**(1/(1+n_m))-1.
-        delta_qs[u_s >= .5] = 1. - (2*(1-u_s[u_s >= .5]))**(1/(1+n_m))
+        lteq = u_s <= 0.5
+        gt = u_s > 0.5
+        delta_qs[lteq] = (2*u_s[lteq])**(1/(1+n_m))-1.
+        delta_qs[gt] = 1. - (2*(1-u_s[gt]))**(1/(1+n_m))
 
         for i in range(X_mat.shape[0] - elitism_num):
-            X_mat[i, :] = X_mat[i, :] + mutate_m[i, :] * delta_qs[i, :] * delta_max
+            lteq = u_s[i] <= 0.5
+            gt = u_s[i] > 0.5
+            X_mat[i, lteq] = X_mat[i, lteq] + mutate_m[i, lteq] * delta_qs[i, lteq] * (X_mat[i, lteq] - self.bounds[0])
+            X_mat[i, gt] = X_mat[i, gt] + mutate_m[i, gt] * delta_qs[i, gt] * (self.bounds[1] - X_mat[i, gt])
             X_mat[i, :] = np.clip(X_mat[i, :], self.bounds[0], self.bounds[1])
         return ProblemUtils._to_genotypes(X, X_mat)
     
+    def _get_parameters(self):
+        return {"pc" : self.pc, "pm" : self.pm, "elitism" : self.elitism, "rang_param" : self.rang_param, "n_dim" :  self.n_dim, "bounds" :  self.bounds}

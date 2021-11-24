@@ -1,112 +1,87 @@
+from re import DEBUG, S
 from hklearn_genetic.utils import ProblemUtils
-from hklearn_genetic.Evaluators.FunctionEvaluators import BaseBeale, BaseEggholder, BaseHimmelblau, BaseRastrigin, Sphere, Schaffer
-from hklearn_genetic.Problems import RealBGAProblem, RealGAProblem, IntegerGAProblem, BinaryGAProblem
-from hklearn_genetic.EvolutionaryAlgorithm import EvolutionaryAlgorithm
-import numpy as np
+from hklearn_genetic.Evaluators.FunctionEvaluators import DTLZ1, DTLZ2, DTLZ12D
+from hklearn_genetic.Problems import RealGAProblem, BaseGAProblem, RealBGAProblem, BinaryGAProblem
+from hklearn_genetic.NSGAIII import NSGAIII
+from hklearn_genetic.NSGAII import NSGAII
 import json
 import os
 import os.path
+import copy
 
-class MyAnalytics:
-    def __init__(self, function_name):
-        self.analytics = {"name" : function_name,"eval_mat" : [], "best_fitness" : [], "average_fitness":[]}
+ANALITYCS = True
+BINARY = False
+BGA = True
+SBX = False
+DEBUG = False
+RUNS = 5
 
-    def gather_analytics(self, X_eval):
-        X_eval_li, X_eval_mat = ProblemUtils._to_evaluated_matrix(X_eval)
-        self.analytics["eval_mat"]+=[X_eval_li]
-        self.analytics["best_fitness"]+=[list(X_eval_mat[int(np.argmin(np.array(X_eval_mat[:, 2]), axis = 0)), :])]
-        self.analytics["average_fitness"]+=[float(X_eval_mat[:, 2].mean())]
+def save_json(path, analytics):
+    with open(path + ".json", 'a') as fp:           
+        fp.write('\n')
+        json.dump(analytics, fp)
 
+parameter_set = [[],[],[]]
 
-analytics_sphere = MyAnalytics("sphere")
-analytics_schaffer = MyAnalytics("schaffer")
-#Defining evaluators
-beale = BaseBeale(rank=0)
-eggholder = BaseEggholder(rank = 0)
-himmelblau = BaseHimmelblau(rank = 0)
-rastrigin = BaseRastrigin(rank=0)
-sphere = Sphere()
-schaffer = Schaffer()
-
-#Defining problems
-#Real SBX crossover and polynomial mutation
-beale_real_sbx = RealGAProblem._BaseRealGAProblem(beale, -0.001, (-4.5, 4.5), pc = 0.85, pm = 0.1)
-eggholder_real_sbx = RealGAProblem._BaseRealGAProblem(eggholder, 959.63, (-512., 512.), pc = 0.85, pm = 0.1)
-himmelblau_real_sbx = RealGAProblem._BaseRealGAProblem(himmelblau, -0.001, (-5., 5.), pc = 0.85, pm = 0.1)
-rastrigin_real_sbx = RealGAProblem._BaseRealGAProblem(rastrigin, -0.0001, (-5.12, 5.12), pc = 0.85, pm = 0.1)
-sphere_real_sbx = RealGAProblem._BaseRealGAProblem(sphere, -0.0001, (-5., 5.), pc = 0.85, pm = 0.1)
-schaffer_real_sbx = RealGAProblem._BaseRealGAProblem(schaffer, -0.001, (-500, 500), pc = 0.85, pm = 0.1)
-#Real BGA based
-beale_real_bga = RealBGAProblem._BaseRealBGAProblem(beale, -0.0001, (-4.5, 4.5), pc = 0.85, pm = 0.1)
-eggholder_real_bga = RealBGAProblem._BaseRealBGAProblem(eggholder, 959.63, (-512., 512.), pc = 0.85, pm = 0.1)
-himmelblau_real_bga = RealBGAProblem._BaseRealBGAProblem(himmelblau, -0.0001, (-5., 5.), pc = 0.85, pm = 0.1)
-rastrigin_real_bga = RealBGAProblem._BaseRealBGAProblem(rastrigin, -0.0001, (-5.12, 5.12), pc = 0.85, pm = 0.1)
-sphere_real_bga = RealBGAProblem._BaseRealBGAProblem(sphere, -0.0001, (-5., 5.), pc = 0.85, pm = 0.1)
-schaffer_real_bga = RealBGAProblem._BaseRealBGAProblem(schaffer, -0.001, (-500, 500), pc = 0.85, pm = 0.1)
-#Integer
-# beale_real_int = IntegerGAProblem._BaseIntegerGAProblem(beale, -0.0001, (-4.5, 4.5), pc = 0.85, pm = 0.1)
-# eggholder_real_int = IntegerGAProblem._BaseIntegerGAProblem(eggholder, -0.0001, (-512., 512.), pc = 0.85, pm = 0.1)
-# himmelblau_real_int = IntegerGAProblem._BaseIntegerGAProblem(himmelblau, -0.0001, (-5., 5.), pc = 0.85, pm = 0.1)
-# rastrigin_real_int = IntegerGAProblem._BaseIntegerGAProblem(rastrigin, -0.0001, (-5.12, 5.12), pc = 0.85, pm = 0.1)
-# sphere_real_int = IntegerGAProblem._BaseIntegerGAProblem(sphere, -0.0001, (-5., 5.), pc = 0.85, pm = 0.1)
-# schaffer_real_int = IntegerGAProblem._BaseIntegerGAProblem(schaffer, -0.001, (-500, 500), pc = 0.85, pm = 0.1)
-#Binary
-beale_real_bin = BinaryGAProblem._BaseBinaryGAProblem(beale, -0.001, (-4.5, 4.5), pc = 0.85, pm = 0.01, n_prec=4)
-eggholder_real_bin = BinaryGAProblem._BaseBinaryGAProblem(eggholder, 959.63, (-512., 512.), pc = 0.85, pm = 0.01, n_prec=4)
-himmelblau_real_bin = BinaryGAProblem._BaseBinaryGAProblem(himmelblau, -0.001, (-5., 5.), pc = 0.85, pm = 0.01, n_prec=4)
-rastrigin_real_bin = BinaryGAProblem._BaseBinaryGAProblem(rastrigin, -0.001, (-5.12, 5.12), pc = 0.85, pm = 0.01, n_prec=4)
-sphere_real_bin = BinaryGAProblem._BaseBinaryGAProblem(sphere, -0.001, (-5., 5.), pc = 0.85, pm = 0.01, n_prec=4)
-schaffer_real_bin = BinaryGAProblem._BaseBinaryGAProblem(schaffer, -0.001, (-500, 500), pc = 0.85, pm = 0.01, n_prec=4)
-
-#Defining the evolutionary algorithm
-ea = EvolutionaryAlgorithm(selection="tournament", tournament_type=1)
+analytics = {#"DTLZ1-NSGA2-Binary" : {"evaluations" : [], "phenotypes":[]},
+    #"DTLZ1-NSGA3-Binary" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ2-NSGA2-Binary" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ2-NSGA3-Binary" : {"evaluations" : [], "phenotypes":[]}, 
+    #"DTLZ1-NSGA2-Real-BGA" : {"evaluations" : [], "phenotypes":[]},  
+    "DTLZ1-NSGA3-Real-BGA" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ2-NSGA2-Real-BGA" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ2-NSGA3-Real-BGA" : {"evaluations" : [], "phenotypes":[]}, 
+    #"DTLZ1-NSGA2-Real-SBX" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ1-NSGA3-Real-SBX" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ2-NSGA2-Real-SBX" : {"evaluations" : [], "phenotypes":[]},  
+    #"DTLZ2-NSGA3-Real-SBX" : {"evaluations" : [], "phenotypes":[]}
+    }
+dtlz1 = DTLZ1()
+dtlz2 = DTLZ2()
+problems = {"DTLZ1-NSGA2-Binary" : {"algorithm": NSGAII(tournament_type = 1),"parameters" : {"n_individuals":200,"evaluator": dtlz1, "thresh": -0.001, "bounds" : (0, 1), "max_iter":1000, "pc":.9, "pm":1/324, "n_prec":8, "n_dim":12}}, 
+    "DTLZ1-NSGA3-Binary" : {"algorithm":NSGAIII(),"parameters" : {"n_individuals": 100, "evaluator": dtlz1, "thresh": -0.001, "bounds" : (0, 1), "max_iter":1000, "pc":.9, "pm":1/324, "n_prec":8, "n_dim":12}}, 
+    "DTLZ2-NSGA2-Binary" : {"algorithm":NSGAII(tournament_type = 1),"parameters" : {"n_individuals":100, "evaluator": dtlz2, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":.9, "pm":1/324, "n_prec":8, "n_dim":12}}, 
+    "DTLZ2-NSGA3-Binary" : {"algorithm":NSGAIII(),"parameters" : {"n_individuals":100, "evaluator": dtlz2, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":.9, "pm":1/324, "n_prec":8, "n_dim":12}},
+    # "DTLZ1-NSGA2-Real-BGA" : {"algorithm":NSGAII(tournament_type = 1),"parameters" : {"n_individuals":200, "evaluator": dtlz1, "thresh": -0.001, "bounds" : (0, 1), "max_iter":1000, "pc":.9, "pm":1/12, "n_dim":12}}, 
+    "DTLZ1-NSGA3-Real-BGA" : {"algorithm":NSGAIII(),"parameters" : {"n_individuals":92, "evaluator": dtlz1, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":.9, "pm":1/12, "n_dim":12}}, 
+    # "DTLZ2-NSGA2-Real-BGA" : {"algorithm":NSGAII(tournament_type = 1),"parameters" : {"n_individuals":100, "evaluator": dtlz2, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":1., "pm":1/12, "n_dim":12}}, 
+    # "DTLZ2-NSGA3-Real-BGA" : {"algorithm":NSGAIII(),"parameters" : {"n_individuals":92, "evaluator": dtlz2, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":1., "pm":1/12, "n_dim":12}},
+    #"DTLZ1-NSGA2-Real-SBX" : {"algorithm":NSGAII(tournament_type = 1),"parameters" : {"n_individuals":200, "evaluator": dtlz1, "thresh": -0.001, "bounds" : (0, 1), "max_iter":1000, "pc":.9, "pm":1/12, "n_dim":12}}, 
+    "DTLZ1-NSGA3-Real-SBX" : {"algorithm":NSGAIII(),"parameters" : {"n_individuals":92, "evaluator": dtlz1, "thresh": -0.001, "bounds" : (0, 1), "max_iter":1000, "pc":1., "pm":1/12, "n_dim":12}}, 
+    #"DTLZ2-NSGA2-Real-SBX" : {"algorithm":NSGAII(tournament_type = 1),"parameters" : {"n_individuals":100, "evaluator": dtlz2, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":.9, "pm":1/12, "n_dim":12}}, 
+    #"DTLZ2-NSGA3-Real-SBX" : {"algorithm":NSGAIII(),"parameters" : {"n_individuals":100, "evaluator": dtlz2, "thresh": -0.001, "bounds" : (0, 1), "max_iter":400, "pc":.9, "pm":1/12, "n_dim":12}} 
+    }
 
 
-# print("Real SBX: ")
-# print(ea.evolve(beale_real_sbx, 100))
-# print(ea.evolve(eggholder_real_sbx, 100))
-# print(ea.evolve(himmelblau_real_sbx, 100))
-# print(ea.evolve(rastrigin_real_sbx, 100))
-# print(ea.evolve(sphere_real_sbx, 100))
-# print(ea.evolve(schaffer_real_sbx, 100))
 
-# print("Real BGA: ")
-# print(ea.evolve(beale_real_bga, 100))
-# print(ea.evolve(eggholder_real_bga, 100))
-# print(ea.evolve(himmelblau_real_bga, 100))
-# print(ea.evolve(rastrigin_real_bga, 100))
-# print(ea.evolve(sphere_real_bga, 100))
-# print(ea.evolve(schaffer_real_bga, 100))
 
-# print("Integer: ")
-# print(ea.evolve(beale_real_int, 100))
-# print(ea.evolve(eggholder_real_int, 100))
-# print(ea.evolve(himmelblau_real_int, 100))
-# print(ea.evolve(rastrigin_real_int, 100))
-# print(ea.evolve(sphere_real_int, 100))
-# print(ea.evolve(schaffer_real_int, 100))
+def StartRuns(number_of_runs, problem_specifications):
+    for run in range(number_of_runs):
+        for k, v in problem_specifications.items(): 
+            print(f"Starting {k} Optimization: {run + 1}")   
+            if "Binary" in k and BINARY:
+                problem = BinaryGAProblem._BaseBinaryGAProblem(v["parameters"])
+            elif "Binary" in k and not BINARY:
+                continue
+            if "BGA" in k and BGA:
+                problem = RealBGAProblem._BaseRealBGAProblem(v["parameters"])
+            elif "BGA" in k and not BGA:
+                continue
+            if "SBX" in k and SBX:
+                problem = RealGAProblem._BaseRealGAProblem(v["parameters"])
+            elif "SBX" in k and not SBX:
+                continue
+            v["algorithm"].max_iter = v["parameters"]["max_iter"]
+            final_front = v["algorithm"].evolve(problem, v["parameters"]["n_individuals"], debug = DEBUG)
+        
+            fitness = [list(p.fitness_metric) for p in final_front]
+            phenotypes = [list(p.phenotype) for p in final_front]
+            analytics[k]["evaluations"] = fitness
+            analytics[k]["phenotypes"] = phenotypes
+            params = copy.deepcopy(v["parameters"])
+            params.pop("evaluator")
+            analytics[k]["parameters"] = params
+        # Dump analytics in a json in order to extract insights from it offline
+        save_json('analytics', analytics)
 
-print("Binary: ")
-print(ea.evolve(beale_real_bin, 100))
-print(ea.evolve(eggholder_real_bin, 100))
-print(ea.evolve(himmelblau_real_bin, 100))
-print(ea.evolve(rastrigin_real_bin, 100))
-print(ea.evolve(sphere_real_bin, 100))
-print(ea.evolve(schaffer_real_bin, 100))
-
-# Dump analytics in a json in order to extract insights from it offline
-# if os.path.isfile('sphere_analytics.json'):
-#     with open('sphere_analytics.json', 'a') as fp:           
-#         fp.write('\n')
-#         json.dump(analytics_sphere.analytics, fp)
-# else:
-#     with open('sphere_analytics.json', 'w') as fp: 
-#         json.dump(analytics_sphere.analytics, fp)
-
-# if os.path.isfile('schaffer_analytics.json'):
-#     with open('schaffer_analytics.json', 'a') as fp:           
-#         fp.write('\n')
-#         json.dump(analytics_schaffer.analytics, fp)
-# else:
-#     with open('schaffer_analytics.json', 'w') as fp: 
-#         json.dump(analytics_schaffer.analytics, fp)
+StartRuns(RUNS, problems)
